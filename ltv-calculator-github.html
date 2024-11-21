@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer LTV & CPA Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .calculator {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        h2 {
+            color: #444;
+            margin-bottom: 15px;
+        }
+        .input-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+        .true-cpa {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .yearly-calculations, .cpa-analysis {
+            margin-top: 25px;
+        }
+        .highlight {
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>Customer LTV & CPA Calculator</h1>
+
+        <div class="input-section">
+            <h2>Input Variables</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Average Order Value (£)</label>
+                    <input type="number" id="averageOrderValue" value="95">
+                </div>
+                <div class="input-group">
+                    <label>Purchase Frequency (yearly)</label>
+                    <input type="number" id="purchaseFrequency" value="1.2">
+                </div>
+                <div class="input-group">
+                    <label>PPC CPA (£)</label>
+                    <input type="number" id="ppcCPA" value="26.5">
+                </div>
+                <div class="input-group">
+                    <label>Target Marketing % of Revenue</label>
+                    <input type="number" id="targetMarketing" value="16">
+                </div>
+                <div class="input-group">
+                    <label>% Orders from Existing Customers</label>
+                    <input type="number" id="existingCustomers" value="11.7">
+                </div>
+                <div class="input-group">
+                    <label>Average Customer Lifespan (years)</label>
+                    <input type="number" id="customerLifespan" value="5" min="1" max="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="true-cpa">
+                <h2>True New Customer CPA: <span id="trueCustomerCPA">£0.00</span></h2>
+            </div>
+
+            <div class="yearly-calculations">
+                <h2>Yearly Calculations</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Revenue This Year</th>
+                            <th>Cumulative Revenue</th>
+                            <th>ROAS</th>
+                            <th>Max. CPA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yearlyCalculations">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cpa-analysis">
+                <h2>CPA Analysis</h2>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Total Revenue</td>
+                            <td id="totalRevenue">£0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Maximum Profitable CPA (16%)</td>
+                            <td id="maxProfitableCPA">£0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Current True CPA</td>
+                            <td id="currentCPA">£0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Headroom for CPA Increase</td>
+                            <td id="headroom">£0.00</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td>% Possible CPA Increase</td>
+                            <td id="possibleIncrease">0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateMetrics() {
+            const inputs = {
+                averageOrderValue: parseFloat(document.getElementById('averageOrderValue').value),
+                purchaseFrequency: parseFloat(document.getElementById('purchaseFrequency').value),
+                ppcCPA: parseFloat(document.getElementById('ppcCPA').value),
+                targetMarketing: parseFloat(document.getElementById('targetMarketing').value) / 100,
+                existingCustomers: parseFloat(document.getElementById('existingCustomers').value) / 100,
+                customerLifespan: parseFloat(document.getElementById('customerLifespan').value)
+            };
+
+            const trueNewCustomerCPA = inputs.ppcCPA / (1 - inputs.existingCustomers);
+            
+            const yearlyRevenue = inputs.averageOrderValue * inputs.purchaseFrequency;
+            let yearlyCalculationsHTML = '';
+            let cumulativeRevenue = 0;
+
+            for (let year = 1; year <= inputs.customerLifespan; year++) {
+                cumulativeRevenue += yearlyRevenue;
+                const roas = cumulativeRevenue / trueNewCustomerCPA;
+                const maxCPA = cumulativeRevenue * inputs.targetMarketing;
+
+                yearlyCalculationsHTML += `
+                    <tr>
+                        <td>${year}</td>
+                        <td>£${yearlyRevenue.toFixed(2)}</td>
+                        <td>£${cumulativeRevenue.toFixed(2)}</td>
+                        <td>${roas.toFixed(2)}x</td>
+                        <td>£${maxCPA.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            const maxProfitableCPA = cumulativeRevenue * inputs.targetMarketing;
+            const headroom = maxProfitableCPA - trueNewCustomerCPA;
+            const possibleIncrease = (headroom / trueNewCustomerCPA) * 100;
+
+            document.getElementById('trueCustomerCPA').textContent = `£${trueNewCustomerCPA.toFixed(2)}`;
+            document.getElementById('yearlyCalculations').innerHTML = yearlyCalculationsHTML;
+            document.getElementById('totalRevenue').textContent = `£${cumulativeRevenue.toFixed(2)}`;
+            document.getElementById('maxProfitableCPA').textContent = `£${maxProfitableCPA.toFixed(2)}`;
+            document.getElementById('currentCPA').textContent = `£${trueNewCustomerCPA.toFixed(2)}`;
+            document.getElementById('headroom').textContent = `£${headroom.toFixed(2)}`;
+            document.getElementById('possibleIncrease').textContent = `${possibleIncrease.toFixed(1)}%`;
+        }
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculateMetrics);
+        });
+
+        calculateMetrics();
+    </script>
+</body>
+</html>
